@@ -1,0 +1,23 @@
+{
+  "name": "concise-test",
+  "version": "2.0.0",
+  "description": "A concise test runner for Node that uses ES6 modules",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dirv/concise-test.git"
+  },
+  "author": "Daniel Irvine",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dirv/concise-test/issues"
+  },
+  "homepage": "https://github.com/dirv/concise-test#readme",
+  "type": "module",
+  "bin": "./src/cli.mjs",
+  "exports": {
+    ".": "./src/runner.mjs"
+  }
+}
