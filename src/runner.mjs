@@ -11,4 +11,10 @@ export const run = async () => {
   console.log("Test run finished");
 };
 
-export const it = (name, body) => body();
+export const it = (name, body) => {
+  try {
+    body();
+  } catch (e) {
+    console.error(e);
+  }
+};
