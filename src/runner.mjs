@@ -1,4 +1,5 @@
 import path from "path";
+import { color } from "./colors.mjs";
 
 export const run = async () => {
   try {
@@ -15,6 +16,7 @@ export const it = (name, body) => {
   try {
     body();
   } catch (e) {
+    console.error(color(`<red>${name}</red>`));
     console.error(e);
   }
 };
