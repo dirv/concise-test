@@ -1,8 +1,10 @@
 import path from "path";
 import { color } from "./colors.mjs";
 import * as matchers from "./matchers.mjs";
+import { ExpectationError } from "./ExpectationError.mjs";
 
 let successes = 0;
+let currentTest;
 let failures = [];
 let describeStack = [];
 
@@ -49,22 +51,29 @@ const invokeAfters = () =>
     describeStack.flatMap((describe) => describe.afters)
   );
 
+const makeTest = (name) => ({
+  testName: name,
+  errors: [],
+  describeStack,
+});
+
 export const it = (name, body) => {
+  currentTest = makeTest();
   try {
     invokeBefores();
     body();
     invokeAfters();
+  } catch (e) {
+    currentTest.errors.push(e);
+  }
+  if (currentTest.errors.length > 0) {
+    console.log(indent(color(`<red>✗</red> ${name}`)));
+    failures.push(currentTest);
+  } else {
+    successes++;
     console.log(
       indent(color(`<green>✓</green> ${name}`))
     );
-    successes++;
-  } catch (e) {
-    console.log(indent(color(`<red>✗</red> ${name}`)));
-    failures.push({
-      error: e,
-      testName: name,
-      describeStack,
-    });
   }
 };
 
@@ -76,13 +85,13 @@ const fullTestDescription = ({
     .map(({ name }) => `<bold>${name}</bold>`)
     .join(" → ");
 
-export const printFailure = (failure) => {
+const printFailure = (failure) => {
   console.error(color(fullTestDescription(failure)));
-  console.error(failure.error);
+  failure.errors.forEach((error) => console.error(error));
   console.error("");
 };
 
-export const printFailures = () => {
+const printFailures = () => {
   if (failures.length > 0) {
     console.error("");
     console.error("Failures:");
@@ -133,8 +142,17 @@ export const afterEach = (body) =>
 const matcherHandler = (actual) => ({
   get:
     (_, name) =>
-    (...args) =>
-      matchers[name](actual, ...args),
+    (...args) => {
+      try {
+        matchers[name](actual, ...args);
+      } catch (e) {
+        if (e instanceof ExpectationError) {
+          currentTest.errors.push(e);
+        } else {
+          throw e;
+        }
+      }
+    },
 });
 
 export const expect = (actual) =>
