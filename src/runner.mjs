@@ -15,6 +15,26 @@ let describeStack = [];
 const exitCodes = {
   ok: 0,
   failures: 1,
+  cannotAccessFile: 2,
+};
+
+const isSingleFileMode = () => process.argv[2];
+
+const getSingleFilePath = async () => {
+  const filePathArg = process.argv[2];
+  try {
+    const fullPath = path.resolve(
+      process.cwd(),
+      filePathArg
+    );
+    await fs.promises.access(fullPath);
+    return [fullPath];
+  } catch {
+    console.error(
+      `File ${filePathArg} could not be accessed.`
+    );
+    process.exit(exitCodes.cannotAccessFile);
+  }
 };
 
 const discoverTestFiles = async () => {
@@ -33,9 +53,14 @@ const discoverTestFiles = async () => {
   return testFilePaths;
 };
 
+const chooseTestFiles = () =>
+  isSingleFileMode()
+    ? getSingleFilePath()
+    : discoverTestFiles();
+
 export const run = async () => {
   try {
-    const testFilePaths = await discoverTestFiles();
+    const testFilePaths = await chooseTestFiles();
     await Promise.all(
       testFilePaths.map(async (testFilePath) => {
         await import(testFilePath);
