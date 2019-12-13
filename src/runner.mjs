@@ -1,7 +1,11 @@
 import path from "path";
+import fs from "fs";
 import { color } from "./colors.mjs";
 import * as matchers from "./matchers.mjs";
 import { ExpectationError } from "./ExpectationError.mjs";
+import { formatStackTrace } from "./stackTraceFormatter.mjs";
+
+Error.prepareStackTrace = formatStackTrace;
 
 let successes = 0;
 let currentTest;
@@ -58,7 +62,7 @@ const makeTest = (name) => ({
 });
 
 export const it = (name, body) => {
-  currentTest = makeTest();
+  currentTest = makeTest(name);
   try {
     invokeBefores();
     body();
@@ -87,7 +91,10 @@ const fullTestDescription = ({
 
 const printFailure = (failure) => {
   console.error(color(fullTestDescription(failure)));
-  failure.errors.forEach((error) => console.error(error));
+  failure.errors.forEach((error) => {
+    console.error(error.message);
+    console.error(error.stack);
+  });
   console.error("");
 };
 
