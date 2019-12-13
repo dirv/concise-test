@@ -6,10 +6,10 @@ export class ExpectationError extends Error {
       "Expected " +
         color(
           message
-            .replace("<actual>", `<bold>${actual}</bold>`)
+            .replace("<actual>", `<red>${actual}</red>`)
             .replace(
               "<expected>",
-              `<bold>${expected}</bold>`
+              `<green>${expected}</green>`
             )
             .replace("<source>", `<bold>${source}</bold>`)
         )
