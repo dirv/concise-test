@@ -4,6 +4,7 @@ import { color } from "./colors.mjs";
 import { formatStackTrace } from "./stackTraceFormatter.mjs";
 import { runParsedBlocks } from "./testContext.mjs";
 import { installReporter } from "./reporters/default.mjs";
+import { dispatch } from "./eventDispatcher.mjs";
 
 Error.prepareStackTrace = formatStackTrace;
 
@@ -63,46 +64,14 @@ export const run = async () => {
         await import(testFilePath);
       })
     );
-    const { failures, successes } =
-      await runParsedBlocks();
-    printFailures(failures);
-    console.log(
-      color(
-        `<green>${successes}</green> tests passed, ` +
-          `<red>${failures.length}</red> tests failed.`
-      )
-    );
+    const failed = await runParsedBlocks();
+    dispatch("finishedTestRun");
     process.exit(
-      failures.length > 0
-        ? exitCodes.failures
-        : exitCodes.ok
+      failed ? exitCodes.failures : exitCodes.ok
     );
   } catch (e) {
     console.error(e.message);
     console.error(e.stack);
     process.exit(exitCodes.parseError);
   }
-};
-
-const fullTestDescription = ({ name, describeStack }) =>
-  [...describeStack, { name }]
-    .map(({ name }) => `<bold>${name}</bold>`)
-    .join(" → ");
-
-const printFailure = (failure) => {
-  console.error(color(fullTestDescription(failure)));
-  failure.errors.forEach((error) => {
-    console.error(error.message);
-    console.error(error.stack);
-  });
-  console.error("");
-};
-
-const printFailures = (failures) => {
-  if (failures.length > 0) {
-    console.error("");
-    console.error("Failures:");
-    console.error("");
-  }
-  failures.forEach(printFailure);
 };
