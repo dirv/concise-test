@@ -1,7 +1,9 @@
 import path from "path";
 import fs from "fs";
+import { color } from "./colors.mjs";
 import { formatStackTrace } from "./stackTraceFormatter.mjs";
 import { runParsedBlocks } from "./testContext.mjs";
+import { install } from "./reporters/default.mjs";
 
 Error.prepareStackTrace = formatStackTrace;
 
@@ -53,6 +55,7 @@ const chooseTestFiles = () =>
     : discoverTestFiles();
 
 export const run = async () => {
+  install();
   try {
     const testFilePaths = await chooseTestFiles();
     await Promise.all(
