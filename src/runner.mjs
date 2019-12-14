@@ -60,7 +60,8 @@ export const run = async () => {
         await import(testFilePath);
       })
     );
-    const { failures, successes } = runParsedBlocks();
+    const { failures, successes } =
+      await runParsedBlocks();
     printFailures(failures);
     console.log(
       color(

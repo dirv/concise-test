@@ -91,22 +91,31 @@ const indent = (message) =>
 
 const withoutLast = (arr) => arr.slice(0, -1);
 
-const runDescribe = (describe) => {
+const runDescribe = async (describe) => {
   console.log(indent(describe.name));
   describeStack = [...describeStack, describe];
-  describe.children.forEach(runBlock);
+  for (let i = 0; i < describe.children.length; ++i) {
+    await runBlock(describe.children[i]);
+  }
   describeStack = withoutLast(describeStack);
 };
 
 let successes = 0;
 let failures = [];
 
-const runIt = (test) => {
+const runBodyAndWait = async (body) => {
+  const result = body();
+  if (result instanceof Promise) {
+    await result;
+  }
+};
+
+const runIt = async (test) => {
   global.currentTest = test;
   test.describeStack = [...describeStack];
   try {
     invokeBefores(test);
-    test.body();
+    await runBodyAndWait(test.body);
     invokeAfters(test);
   } catch (e) {
     test.errors.push(e);
@@ -141,8 +150,10 @@ const invokeAfters = () =>
 const runBlock = (block) =>
   isIt(block) ? runIt(block) : runDescribe(block);
 
-export const runParsedBlocks = () => {
+export const runParsedBlocks = async () => {
   const withFocus = focusedOnly(currentDescribe);
-  withFocus.children.forEach(runBlock);
+  for (let i = 0; i < withFocus.children.length; ++i) {
+    await runBlock(withFocus.children[i]);
+  }
   return { successes, failures };
 };
