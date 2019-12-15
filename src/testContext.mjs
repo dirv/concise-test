@@ -1,5 +1,6 @@
 import { color } from "./colors.mjs";
 import { focusedOnly } from "./focus.mjs";
+import { taggedOnly } from "./tags.mjs";
 import { TestTimeoutError } from "./TestTimeoutError.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
 export { expect } from "./expect.mjs";
@@ -21,7 +22,7 @@ const makeDescribe = (name, options) => ({
 
 currentDescribe = makeDescribe("root");
 
-const describeWithOpts = (name, body, options = {}) => {
+const parseDescribe = (name, body, options) => {
   const parentDescribe = currentDescribe;
   currentDescribe = makeDescribe(name, options);
   body();
@@ -34,8 +35,53 @@ const describeWithOpts = (name, body, options = {}) => {
   };
 };
 
-export const describe = (name, body) =>
-  describeWithOpts(name, body, {});
+const describeWithOpts = (
+  name,
+  eitherBodyOrUserOpts,
+  eitherBodyOrExtensionOpts,
+  extensionOpts = {}
+) => {
+  if (eitherBodyOrUserOpts instanceof Function)
+    parseDescribe(name, eitherBodyOrUserOpts, {
+      ...eitherBodyOrExtensionOpts,
+      ...extensionOpts,
+    });
+  else
+    parseDescribe(name, eitherBodyOrExtensionOpts, {
+      ...eitherBodyOrUserOpts,
+      ...extensionOpts,
+    });
+};
+
+const itWithOpts = (
+  name,
+  eitherBodyOrUserOpts,
+  eitherBodyOrExtensionOpts,
+  extensionOpts = {}
+) => {
+  if (eitherBodyOrUserOpts instanceof Function)
+    parseIt(name, eitherBodyOrUserOpts, {
+      ...eitherBodyOrExtensionOpts,
+      ...extensionOpts,
+    });
+  else
+    parseIt(name, eitherBodyOrExtensionOpts, {
+      ...eitherBodyOrUserOpts,
+      ...extensionOpts,
+    });
+};
+
+export const describe = (
+  name,
+  eitherBodyOrOpts,
+  bodyIfOpts
+) =>
+  describeWithOpts(
+    name,
+    eitherBodyOrOpts,
+    bodyIfOpts,
+    {}
+  );
 
 const makeTest = (name, body, options) => ({
   name,
@@ -45,7 +91,7 @@ const makeTest = (name, body, options) => ({
   timeoutError: new TestTimeoutError(5000),
 });
 
-const itWithOpts = (name, body, options) => {
+const parseIt = (name, body, options) => {
   currentDescribe = {
     ...currentDescribe,
     children: [
@@ -55,8 +101,8 @@ const itWithOpts = (name, body, options) => {
   };
 };
 
-export const it = (name, body) =>
-  itWithOpts(name, body, {});
+export const it = (name, eitherBodyOrOpts, bodyIfOpts) =>
+  itWithOpts(name, eitherBodyOrOpts, bodyIfOpts);
 
 const addOptionsOverride = (
   object,
@@ -93,9 +139,6 @@ const isIt = (testObject) =>
   testObject.hasOwnProperty("body");
 
 let describeStack = [];
-
-const indent = (message) =>
-  `${" ".repeat(describeStack.length * 2)}${message}`;
 
 const withoutLast = (arr) => arr.slice(0, -1);
 
@@ -189,10 +232,11 @@ const anyFailed = (block) => {
   }
 };
 
-export const runParsedBlocks = async () => {
-  const withFocus = focusedOnly(currentDescribe);
-  for (let i = 0; i < withFocus.children.length; ++i) {
-    await runBlock(withFocus.children[i]);
+export const runParsedBlocks = async ({ tags }) => {
+  let filtered = focusedOnly(currentDescribe);
+  filtered = taggedOnly(tags, filtered);
+  for (let i = 0; i < filtered.children.length; ++i) {
+    await runBlock(filtered.children[i]);
   }
-  return anyFailed(currentDescribe);
+  return anyFailed(filtered);
 };
