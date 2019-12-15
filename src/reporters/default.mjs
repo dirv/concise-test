@@ -34,7 +34,7 @@ export const installReporter = () => {
   listen(
     "beginningDescribe",
     (describeStack, { name }) => {
-      console.log(indent(describeStack, name));
+      console.log(indent(describeStack, color(name)));
     }
   );
 
