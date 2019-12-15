@@ -33,8 +33,17 @@ export const installReporter = () => {
 
   listen(
     "beginningDescribe",
-    (describeStack, { name }) => {
-      console.log(indent(describeStack, color(name)));
+    (describeStack, { name, sharedContextFn }) => {
+      if (sharedContextFn) {
+        console.log(
+          indent(
+            describeStack,
+            color(`${name} (<cyan>shared</cyan>)`)
+          )
+        );
+      } else {
+        console.log(indent(describeStack, name));
+      }
     }
   );
 

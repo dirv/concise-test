@@ -3,6 +3,11 @@ import { focusedOnly } from "./focus.mjs";
 import { TestTimeoutError } from "./TestTimeoutError.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
 export { expect } from "./expect.mjs";
+import {
+  registerSharedExample,
+  findSharedExample,
+  buildSharedExampleTest,
+} from "./sharedExamples.mjs";
 
 let currentDescribe;
 
@@ -111,9 +116,10 @@ const runBodyAndWait = async (body) => {
 const runIt = async (test) => {
   global.currentTest = test;
   test.describeStack = [...describeStack];
+  const wrappedBody = buildSharedExampleTest(test);
   try {
     invokeBefores(test);
-    await runBodyAndWait(test.body);
+    await runBodyAndWait(wrappedBody);
     invokeAfters(test);
   } catch (e) {
     test.errors.push(e);
@@ -130,6 +136,14 @@ const runItWithOpts = (timeout) => {
 };
 
 addModifier(it, "timesOutAfter", runItWithOpts, {});
+
+const behavesLike = (name, sharedContextFn) =>
+  describeWithOpts(name, findSharedExample(name), {
+    sharedContextFn,
+  });
+
+addModifier(it, "behavesLike", behavesLike, {});
+addModifier(describe, "shared", registerSharedExample);
 
 const invokeAll = (fnArray) =>
   fnArray.forEach((fn) => fn());
