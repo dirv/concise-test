@@ -56,6 +56,12 @@ const chooseTestFiles = () =>
     ? getSingleFilePath()
     : discoverTestFiles();
 
+const readRandomFlag = () => {
+  if (process.argv.find((t) => t === "--randomize")) {
+    return true;
+  }
+};
+
 const readTags = () => {
   const tagArgIndex = process.argv.findIndex(
     (t) => t === "--tags"
@@ -78,6 +84,7 @@ export const run = async () => {
     );
     const failed = await runParsedBlocks({
       tags: readTags(),
+      shouldRandomize: readRandomFlag(),
     });
     dispatch("finishedTestRun");
     process.exit(
