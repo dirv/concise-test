@@ -1,6 +1,7 @@
 import { color } from "./colors.mjs";
 import { focusedOnly } from "./focus.mjs";
 import { taggedOnly } from "./tags.mjs";
+import { randomizeBlocks } from "./randomize.mjs";
 import { TestTimeoutError } from "./TestTimeoutError.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
 export { expect } from "./expect.mjs";
@@ -242,9 +243,13 @@ const anyFailed = (block) => {
   }
 };
 
-export const runParsedBlocks = async ({ tags }) => {
+export const runParsedBlocks = async ({
+  tags,
+  shouldRandomize,
+}) => {
   let filtered = focusedOnly(currentDescribe);
   filtered = taggedOnly(tags, filtered);
+  filtered = randomizeBlocks(shouldRandomize, filtered);
   for (let i = 0; i < filtered.children.length; ++i) {
     await runBlock(filtered.children[i]);
   }
