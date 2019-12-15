@@ -24,8 +24,13 @@ currentDescribe = makeDescribe("root");
 
 const describeWithOpts = (name, body, options) => {
   const parentDescribe = currentDescribe;
-  currentDescribe = makeDescribe(name, options);
-  body();
+  currentDescribe = makeDescribe(name, {
+    skip: body === undefined,
+    ...options,
+  });
+  if (body) {
+    body();
+  }
   currentDescribe = {
     ...parentDescribe,
     children: [
@@ -120,6 +125,13 @@ addModifier(describe, "only", describeWithOpts, {
   focus: true,
 });
 
+addModifier(it, "skip", itWithOpts, {
+  skip: true,
+});
+addModifier(describe, "skip", describeWithOpts, {
+  skip: true,
+});
+
 export const beforeEach = (body) => {
   currentDescribe = {
     ...currentDescribe,
@@ -142,6 +154,10 @@ let describeStack = [];
 const withoutLast = (arr) => arr.slice(0, -1);
 
 const runDescribe = async (describe) => {
+  if (describe.skip) {
+    dispatch("skippingDescribe", describeStack, describe);
+    return;
+  }
   dispatch("beginningDescribe", describeStack, describe);
   describeStack = [...describeStack, describe];
   for (let i = 0; i < describe.children.length; ++i) {
@@ -163,6 +179,10 @@ const runBodyAndWait = async (body) => {
 const runIt = async (test) => {
   global.currentTest = test;
   test.describeStack = [...describeStack];
+  if (test.skip || !test.body) {
+    dispatch("skippingTest", test);
+    return;
+  }
   const wrappedBody = buildSharedExampleTest(test);
   try {
     invokeBefores(test);

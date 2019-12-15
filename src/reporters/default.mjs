@@ -76,4 +76,27 @@ export const installReporter = () => {
       )
     );
   });
+
+  listen(
+    "skippingDescribe",
+    (describeStack, { name }) => {
+      console.log(
+        indent(
+          describeStack,
+          color(`<strike>${name}</strike>`)
+        )
+      );
+    }
+  );
+
+  listen("skippingTest", ({ describeStack, name }) => {
+    console.log(
+      indent(
+        describeStack,
+        color(
+          `<yellow>?</yellow> <strike>${name}</strike>`
+        )
+      )
+    );
+  });
 };
