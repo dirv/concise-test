@@ -10,6 +10,15 @@ export const toBeDefined = (actual) => {
   }
 };
 
+export const toBe = (actual, expected) => {
+  if (actual !== expected) {
+    throw new ExpectationError(
+      "<actual> to be <expected>",
+      { actual, expected }
+    );
+  }
+};
+
 export const toThrow = (source, expected) => {
   try {
     source();
