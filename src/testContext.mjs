@@ -1,5 +1,6 @@
 import { color } from "./colors.mjs";
 import { focusedOnly } from "./focus.mjs";
+import { taggedOnly } from "./tags.mjs";
 import { TestTimeoutError } from "./TestTimeoutError.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
 export { expect } from "./expect.mjs";
@@ -21,7 +22,7 @@ const makeDescribe = (name, options) => ({
 
 currentDescribe = makeDescribe("root");
 
-const describeWithOpts = (name, body, options = {}) => {
+const describeWithOpts = (name, body, options) => {
   const parentDescribe = currentDescribe;
   currentDescribe = makeDescribe(name, options);
   body();
@@ -34,8 +35,32 @@ const describeWithOpts = (name, body, options = {}) => {
   };
 };
 
-export const describe = (name, body) =>
-  describeWithOpts(name, body, {});
+const chooseOptions = (eitherBodyOrOpts) => {
+  if (eitherBodyOrOpts instanceof Function) {
+    return {};
+  } else {
+    return eitherBodyOrOpts;
+  }
+};
+
+const chooseBody = (eitherBodyOrOpts, bodyIfOpts) => {
+  if (eitherBodyOrOpts instanceof Function) {
+    return eitherBodyOrOpts;
+  } else {
+    return bodyIfOpts;
+  }
+};
+
+export const describe = (
+  name,
+  eitherBodyOrOpts,
+  bodyIfOpts
+) =>
+  describeWithOpts(
+    name,
+    chooseBody(eitherBodyOrOpts, bodyIfOpts),
+    chooseOptions(eitherBodyOrOpts)
+  );
 
 const makeTest = (name, body, options) => ({
   name,
@@ -55,12 +80,37 @@ const itWithOpts = (name, body, options) => {
   };
 };
 
-export const it = (name, body) =>
-  itWithOpts(name, body, {});
+export const it = (name, eitherBodyOrOpts, bodyIfOpts) =>
+  itWithOpts(
+    name,
+    chooseBody(eitherBodyOrOpts, bodyIfOpts),
+    chooseOptions(eitherBodyOrOpts)
+  );
 
-const addModifier = (object, property, fn, options) =>
+const mergeModifierOptsIntoUserOpts = (
+  eitherBodyOrUserOpts,
+  modifierOpts
+) => ({
+  ...chooseOptions(eitherBodyOrUserOpts),
+  ...modifierOpts,
+});
+
+const addModifier = (
+  object,
+  property,
+  fn,
+  modifierOpts
+) =>
   Object.defineProperty(object, property, {
-    value: (...args) => fn(...args, options),
+    value: (name, eitherBodyOrOpts, bodyIfOpts) =>
+      fn(
+        name,
+        chooseBody(eitherBodyOrOpts, bodyIfOpts),
+        mergeModifierOptsIntoUserOpts(
+          eitherBodyOrOpts,
+          modifierOpts
+        )
+      ),
   });
 
 addModifier(it, "only", itWithOpts, {
@@ -88,9 +138,6 @@ const isIt = (testObject) =>
   testObject.hasOwnProperty("body");
 
 let describeStack = [];
-
-const indent = (message) =>
-  `${" ".repeat(describeStack.length * 2)}${message}`;
 
 const withoutLast = (arr) => arr.slice(0, -1);
 
@@ -175,10 +222,11 @@ const anyFailed = (block) => {
   }
 };
 
-export const runParsedBlocks = async () => {
-  const withFocus = focusedOnly(currentDescribe);
-  for (let i = 0; i < withFocus.children.length; ++i) {
-    await runBlock(withFocus.children[i]);
+export const runParsedBlocks = async ({ tags }) => {
+  let filtered = focusedOnly(currentDescribe);
+  filtered = taggedOnly(tags, filtered);
+  for (let i = 0; i < filtered.children.length; ++i) {
+    await runBlock(filtered.children[i]);
   }
-  return anyFailed(currentDescribe);
+  return anyFailed(filtered);
 };

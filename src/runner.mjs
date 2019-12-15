@@ -15,7 +15,8 @@ const exitCodes = {
   parseError: 3,
 };
 
-const isSingleFileMode = () => process.argv[2];
+const isSingleFileMode = () =>
+  process.argv[2] && !process.argv[2].startsWith("-");
 
 const getSingleFilePath = async () => {
   const filePathArg = process.argv[2];
@@ -55,6 +56,17 @@ const chooseTestFiles = () =>
     ? getSingleFilePath()
     : discoverTestFiles();
 
+const readTags = () => {
+  const tagArgIndex = process.argv.findIndex(
+    (t) => t === "--tags"
+  );
+  if (tagArgIndex > -1) {
+    return process.argv[tagArgIndex + 1]
+      .split(",")
+      .map((tag) => tag.trim());
+  }
+};
+
 export const run = async () => {
   installReporter();
   try {
@@ -64,7 +76,9 @@ export const run = async () => {
         await import(testFilePath);
       })
     );
-    const failed = await runParsedBlocks();
+    const failed = await runParsedBlocks({
+      tags: readTags(),
+    });
     dispatch("finishedTestRun");
     process.exit(
       failed ? exitCodes.failures : exitCodes.ok
