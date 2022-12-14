@@ -19,5 +19,8 @@
   "bin": "./src/cli.mjs",
   "exports": {
     ".": "./src/runner.mjs"
+  },
+  "prettier": {
+    "printWidth": 58
   }
 }
