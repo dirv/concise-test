@@ -137,10 +137,16 @@ const runItWithOpts = (timeout) => {
 
 addModifier(it, "timesOutAfter", runItWithOpts, {});
 
-const behavesLike = (name, sharedContextFn) =>
+const behavesLike = (name, sharedContextFn) => {
+  const sharedExample = findSharedExample(name);
+  if (!sharedExample)
+    throw new Error(
+      `The shared context "${name}" was not found. Have you imported the file containing the shared context definition?`
+    );
   describeWithOpts(name, findSharedExample(name), {
     sharedContextFn,
   });
+};
 
 addModifier(it, "behavesLike", behavesLike, {});
 addModifier(describe, "shared", registerSharedExample);
