@@ -23,7 +23,8 @@ export const run = async () => {
       path.resolve(process.cwd(), "test/tests.js")
     );
   } catch (e) {
-    console.error(e);
+    console.error(e.message);
+    console.error(e.stack);
   }
   printFailures();
   console.log(
