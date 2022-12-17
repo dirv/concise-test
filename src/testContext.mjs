@@ -11,6 +11,7 @@ import {
   buildSharedExampleTest,
 } from "./sharedExamples.mjs";
 export * from "./equals.mjs";
+export * from "./spy.mjs";
 
 let currentDescribe;
 
