@@ -1,6 +1,7 @@
 import { color } from "./colors.mjs";
 import { ExpectationError } from "./ExpectationError.mjs";
 import { EOL } from "os";
+export { toBeCalledWith } from "./spy.mjs";
 
 export const toBeDefined = (actual) => {
   if (!actual) {
