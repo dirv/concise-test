@@ -10,6 +10,7 @@ import {
   findSharedExample,
   buildSharedExampleTest,
 } from "./sharedExamples.mjs";
+export * from "./equals.mjs";
 
 let currentDescribe;
 
