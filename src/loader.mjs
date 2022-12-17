@@ -22,16 +22,43 @@ const toSourceString = (path, exportedKeys) =>
   ].join(EOL);
 
 export async function load(url, context, nextLoad) {
-  const mockedExports = mockedModuleExportsFor(url);
+  const urlWithoutQueryString = url.slice(
+    0,
+    url.indexOf("?")
+  );
+  const mockedExports = mockedModuleExportsFor(
+    urlWithoutQueryString
+  );
   if (mockedExports) {
     return {
       format: "module",
       shortCircuit: true,
       source: toSourceString(
-        url,
+        urlWithoutQueryString,
         Object.keys(mockedExports)
       ),
     };
   }
   return nextLoad(url);
+}
+
+export async function resolve(
+  specifier,
+  context,
+  nextResolve
+) {
+  const { parentURL } = context;
+  if (parentURL) {
+    const url = new URL(specifier, parentURL);
+    const mockedExports = mockedModuleExportsFor(url);
+    if (mockedExports) {
+      return {
+        shortCircuit: true,
+        url: new URL(`?${Date.now()}`, url)
+          .href,
+      };
+    }
+  }
+
+  return nextResolve(specifier);
 }

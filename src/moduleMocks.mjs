@@ -15,5 +15,10 @@ export const registerMock = (
   global.mockRegistry[fileUrl] = mockedModuleExports;
 };
 
+export const withMockContext = async (importFn) => {
+  global.mockRegistry = {};
+  await importFn();
+};
+
 export const mockedModuleExportsFor = (path) =>
   global.mockRegistry[path];

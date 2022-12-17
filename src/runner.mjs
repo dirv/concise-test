@@ -5,6 +5,7 @@ import { formatStackTrace } from "./stackTraceFormatter.mjs";
 import { runParsedBlocks } from "./testContext.mjs";
 import { install } from "./reporters/default.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
+import { withMockContext } from "./moduleMocks.mjs";
 
 Error.prepareStackTrace = formatStackTrace;
 
@@ -73,13 +74,16 @@ const readTags = () => {
   }
 };
 
+const importWithMockContext = (testFilePath) =>
+  withMockContext(() => import(testFilePath));
+
 export const run = async () => {
   install();
   try {
     const testFilePaths = await chooseTestFiles();
     await Promise.all(
       testFilePaths.map(async (testFilePath) => {
-        await import(testFilePath);
+        await importWithMockContext(testFilePath);
       })
     );
     const failed = await runParsedBlocks({
