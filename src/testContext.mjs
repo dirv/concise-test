@@ -12,6 +12,7 @@ import {
 } from "./sharedExamples.mjs";
 export * from "./equals.mjs";
 export * from "./spy.mjs";
+export { registerMock } from "./moduleMocks.mjs";
 
 let currentDescribe;
 

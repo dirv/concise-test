@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/dirv/concise-test#readme",
   "type": "module",
-  "bin": "./src/cli.mjs",
+  "bin": "./bin/concise-test.sh",
   "exports": {
     ".": "./src/testContext.mjs"
   },
