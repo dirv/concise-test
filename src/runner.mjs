@@ -1,10 +1,20 @@
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+import { Worker } from "node:worker_threads";
 import { color } from "./colors.mjs";
 import { formatStackTrace } from "./stackTraceFormatter.mjs";
 import { runParsedBlocks } from "./testContext.mjs";
 import { installReporter } from "./reporters/default.mjs";
 import { dispatch } from "./eventDispatcher.mjs";
+
+const __dirname = path.dirname(
+  fileURLToPath(import.meta.url)
+);
+const workerFilePath = path.join(
+  __dirname,
+  "./worker.mjs"
+);
 
 Error.prepareStackTrace = formatStackTrace;
 
@@ -12,7 +22,6 @@ const exitCodes = {
   ok: 0,
   failures: 1,
   cannotAccessFile: 2,
-  parseError: 3,
 };
 
 const isSingleFileMode = () =>
@@ -73,26 +82,48 @@ const readTags = () => {
   }
 };
 
+const createWorker = (testFilePath, processOptions) => {
+  const worker = new Worker(workerFilePath, {
+    workerData: {
+      ...processOptions,
+      testFilePath,
+    },
+  });
+  worker.on("message", ([event, args]) =>
+    dispatch(event, ...args)
+  );
+  return worker;
+};
+
+const waitForWorker = (worker) =>
+  new Promise((resolve) => {
+    worker.on("exit", (code) => {
+      resolve(code);
+    });
+  });
+
+const anyFailures = (exitCodes) =>
+  exitCodes.filter((exitCode) => exitCode !== 0).count >
+  0;
+
 export const run = async () => {
   installReporter();
-  try {
-    const testFilePaths = await chooseTestFiles();
-    await Promise.all(
-      testFilePaths.map(async (testFilePath) => {
-        await import(testFilePath);
-      })
-    );
-    const failed = await runParsedBlocks({
-      tags: readTags(),
-      shouldRandomize: readRandomFlag(),
-    });
-    dispatch("finishedTestRun");
-    process.exit(
-      failed ? exitCodes.failures : exitCodes.ok
-    );
-  } catch (e) {
-    console.error(e.message);
-    console.error(e.stack);
-    process.exit(exitCodes.parseError);
-  }
+  const testFilePaths = await chooseTestFiles();
+  const processOptions = {
+    tags: readTags(),
+    shouldRandomise: readRandomFlag(),
+  };
+  const exitCodes = await Promise.all(
+    testFilePaths.map((testFilePath) =>
+      waitForWorker(
+        createWorker(testFilePath, processOptions)
+      )
+    )
+  );
+  dispatch("finishedTestRun");
+  process.exit(
+    anyFailures(exitCodes)
+      ? exitCodes.failures
+      : exitCodes.ok
+  );
 };
